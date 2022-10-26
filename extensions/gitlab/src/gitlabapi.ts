@@ -8,6 +8,9 @@ import { pipeline } from "stream";
 const streamPipeline = util.promisify(pipeline);
 import https from "https";
 import { getPreferenceValues } from "@raycast/api";
+import { Agent } from "better-https-proxy-agent";
+import { URL } from "url";
+// import { HttpsProxyAgent } from "https-proxy-agent";
 
 function readCACertFileSync(filename: string): Buffer | undefined {
   try {
@@ -39,6 +42,40 @@ export function getHttpAgent(): https.Agent | undefined {
     const opt: https.AgentOptions = { rejectUnauthorized: !ignoreCertificates, ca: ca, cert: cert };
     agent = new https.Agent(opt);
   }
+  return agent;
+}
+
+export function getHttpProxyAgent(): Agent | https.Agent | undefined {
+  let agent: Agent | https.Agent | undefined;
+  const preferences = getPreferenceValues();
+  const proxyURL = (preferences.proxy as string) || "";
+  if (proxyURL.length > 0) {
+    const parsedProxyURL = new URL(proxyURL);
+
+    const proxyRequestOptions = {
+      protocol: parsedProxyURL.protocol,
+      hostname: parsedProxyURL.hostname,
+      port: parsedProxyURL.port,
+    };
+
+    const ignoreCertificates = (preferences.ignorecerts as boolean) || false;
+    const customcacert = (preferences.customcacert as string) || "";
+    const customcert = (preferences.customcert as string) || "";
+    const ca = customcacert.length > 0 ? readCACertFileSync(customcacert) : undefined;
+    const cert = customcert.length > 0 ? readCertFileSync(customcert) : undefined;
+
+    const httpAgentOptions = {
+      keepAlive: true,
+      timeout: 55000,
+      rejectUnauthorized: !ignoreCertificates,
+      ca: ca,
+      cert: cert,
+    };
+    agent = new Agent(httpAgentOptions, proxyRequestOptions);
+  } else {
+    agent = getHttpAgent();
+  }
+
   return agent;
 }
 
@@ -352,7 +389,7 @@ export class GitLab {
       const ps = paramString(pagedParams);
       const fullUrl = this.url + "/api/v4/" + url + ps;
       logAPI(`send GET request: ${fullUrl}`);
-      const agent = getHttpAgent();
+      const agent = getHttpProxyAgent();
       const response = await fetch(fullUrl, {
         method: "GET",
         headers: {
@@ -386,11 +423,13 @@ export class GitLab {
 
   public async downloadFile(url: string, params: { localFilepath: string }): Promise<string> {
     logAPI(`download ${url}`);
+    const agent = getHttpProxyAgent();
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "PRIVATE-TOKEN": this.token,
       },
+      agent: agent,
     });
     if (!response.ok) {
       throw new Error(`unexpected response ${response.statusText}`);
@@ -402,6 +441,7 @@ export class GitLab {
 
   public async post(url: string, params: { [key: string]: any } = {}): Promise<any> {
     const fullUrl = this.url + "/api/v4/" + url;
+    const agent = getHttpProxyAgent();
     logAPI(`send POST request: ${fullUrl}`);
     logAPI(params);
     try {
@@ -412,6 +452,7 @@ export class GitLab {
           "PRIVATE-TOKEN": this.token,
         },
         body: JSON.stringify(params),
+        agent: agent,
       });
       const s = response.status;
       logAPI(`status code: ${s}`);
@@ -454,6 +495,7 @@ export class GitLab {
 
   public async put(url: string, params: { [key: string]: any } = {}): Promise<void> {
     const fullUrl = this.url + "/api/v4/" + url;
+    const agent = getHttpProxyAgent();
     logAPI(`send PUT request: ${fullUrl}`);
     logAPI(params);
     try {
@@ -464,6 +506,7 @@ export class GitLab {
           "PRIVATE-TOKEN": this.token,
         },
         body: JSON.stringify(params),
+        agent: agent,
       });
       await toJsonOrError(response);
     } catch (e: any) {

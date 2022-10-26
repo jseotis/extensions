@@ -154,6 +154,14 @@
       "placeholder": "Enter your GitLab API token."
     },
     {
+      "name": "proxy",
+      "type": "textfield",
+      "required": false,
+      "title": "Proxy Server",
+      "description": "Enter the proxy server used to connect (e.g. useful for when on corporate networks)",
+      "placeholder": "http://localhost:3128"
+    },
+    {
       "name": "cirefreshinterval",
       "type": "textfield",
       "required": false,
@@ -238,6 +246,7 @@
     "@raycast/api": "^1.38.1",
     "@raycast/utils": "^1.0.6",
     "apollo-link-context": "^1.0.20",
+    "better-https-proxy-agent": "^1.0.9",
     "fuse.js": "^6.4.6",
     "graphql": "^15.5.1",
     "javascript-time-ago": "^2.3.10",
