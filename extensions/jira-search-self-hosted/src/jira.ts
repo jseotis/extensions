@@ -2,15 +2,31 @@ import { getPreferenceValues } from "@raycast/api";
 import fetch, { FetchError, Response } from "node-fetch";
 import { ErrorText, PresentableError } from "./exception";
 import * as https from "https";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import { URL } from "url";
 
-const prefs: { domain: string; token: string; unsafeHTTPS: boolean } = getPreferenceValues();
+const prefs: { domain: string; token: string; proxy: string; unsafeHTTPS: boolean } = getPreferenceValues();
 export const jiraUrl = `https://${prefs.domain}`;
 
 const headers = {
   Accept: "application/json",
   Authorization: `Bearer ${prefs.token}`,
 };
-const agent = new https.Agent({ rejectUnauthorized: !prefs.unsafeHTTPS });
+
+let agent: https.Agent | HttpsProxyAgent | undefined;
+const proxyURL = (prefs.proxy as string) || "";
+if (proxyURL.length > 0) {
+  const parsedProxyURL = new URL(proxyURL);
+  agent = new HttpsProxyAgent({
+    protocol: parsedProxyURL.protocol,
+    host: parsedProxyURL.hostname,
+    port: parsedProxyURL.port,
+    rejectUnauthorized: !prefs.unsafeHTTPS,
+  });
+} else {
+  agent = new https.Agent({ rejectUnauthorized: !prefs.unsafeHTTPS });
+}
+
 const init = {
   headers,
   agent,

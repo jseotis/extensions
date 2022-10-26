@@ -51,6 +51,14 @@
       "description": "Your API token as described at https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html"
     },
     {
+      "name": "proxy",
+      "type": "textfield",
+      "required": false,
+      "title": "Proxy Server",
+      "description": "Enter the proxy server used to connect (e.g. useful for when on corporate networks)",
+      "placeholder": "http://localhost:3128"
+    },
+    {
       "name": "unsafeHTTPS",
       "type": "checkbox",
       "required": false,
@@ -62,6 +70,7 @@
   ],
   "dependencies": {
     "@raycast/api": "^1.36.0",
+    "https-proxy-agent": "^5.0.1",
     "node-fetch": "^3.1.0"
   },
   "devDependencies": {
@@ -71,9 +80,9 @@
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
+    "prettier": "^2.5.1",
     "react-devtools": "^4.19.2",
-    "typescript": "^4.4.3",
-    "prettier": "^2.5.1"
+    "typescript": "^4.4.3"
   },
   "scripts": {
     "build": "ray build -e dist",
