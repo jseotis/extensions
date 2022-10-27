@@ -12,9 +12,17 @@ import {
 import fetch, { AbortError, RequestInit, Response } from "node-fetch";
 import { useCallback, useEffect, useRef, useState } from "react";
 import https = require("https");
+import { HttpsProxyAgent } from "https-proxy-agent";
+import { URL } from "url";
 
-const prefs: { instanceType: string; user: string; instance: string; unsafeHttps: boolean; token: string } =
-  getPreferenceValues();
+const prefs: {
+  instanceType: string;
+  user: string;
+  instance: string;
+  proxy: string;
+  unsafeHttps: boolean;
+  token: string;
+} = getPreferenceValues();
 export const confluenceUrl =
   prefs.instanceType == "cloud" ? `https://${prefs.instance}/wiki` : `https://${prefs.instance}`;
 
@@ -75,14 +83,25 @@ function useSearch() {
 }
 
 async function searchConfluence(searchText: string, signal: AbortSignal) {
-  const httpsAgent = new https.Agent({
-    rejectUnauthorized: !prefs.unsafeHttps,
-  });
+  let agent: https.Agent | HttpsProxyAgent | undefined;
+  const proxyURL = (prefs.proxy as string) || "";
+  if (proxyURL.length > 0) {
+    const parsedProxyURL = new URL(proxyURL);
+    agent = new HttpsProxyAgent({
+      protocol: parsedProxyURL.protocol,
+      host: parsedProxyURL.hostname,
+      port: parsedProxyURL.port,
+      rejectUnauthorized: !prefs.unsafeHttps,
+    });
+  } else {
+    agent = new https.Agent({ rejectUnauthorized: !prefs.unsafeHttps });
+  }
+
   const init: RequestInit = {
     headers,
     method: "get",
     signal: signal,
-    agent: httpsAgent,
+    agent: agent,
   };
   const apiUrl = `${confluenceUrl}/rest/api/search?cql=title~"${searchText}*"&expand=content.version`;
   return fetch(apiUrl, init).then((response) => {

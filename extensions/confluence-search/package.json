@@ -45,6 +45,14 @@
       "placeholder": "my.atlassian.net"
     },
     {
+      "name": "proxy",
+      "type": "textfield",
+      "required": false,
+      "title": "Proxy Server",
+      "description": "Enter the proxy server used to connect (e.g. useful for when on corporate networks)",
+      "placeholder": "http://localhost:3128"
+    },
+    {
       "name": "unsafeHttps",
       "type": "checkbox",
       "required": false,
@@ -73,6 +81,7 @@
   ],
   "dependencies": {
     "@raycast/api": "^1.27.0",
+    "https-proxy-agent": "^5.0.1",
     "node-fetch": "^3.0.0",
     "prettier": "^2.5.1"
   },
